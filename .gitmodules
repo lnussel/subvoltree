@@ -1,0 +1,3 @@
+[submodule "tig"]
+	path = tig
+	url = http://github.com/jonas/tig.git

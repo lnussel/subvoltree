@@ -1,0 +1,19 @@
+#!/bin/bash
+read _current current < <(btrfs subvol show / |grep UUID)
+# ID 1811 gen 817816 top level 258 path @/.snapshots/871/snapshot
+read _id id _gen gen _top _level level _path path < <(btrfs subvolume get-default /)
+default="${path#@/.snapshots/}"
+default="${default%/*}"
+# ID 1814 gen 817521 top level 258 parent_uuid b1e30e67-bd3e-4440-a0fb-0533703faf2b uuid 644330a7-f049-6345-bf4f-8c43d5b38ca8 path @/.snapshots/873/snapshot
+while read _id id _gen gen _top _level _level _parent_uuid parent_uuid _uuid uuid _path path; do
+	number="${path#@/.snapshots/}"
+	[ "$path" != "$number" ] || continue
+	number=${number%/*}
+	desc=$(sed -ne '/description/s/.*>\([^<]\+\)<.*/\1/p' "/.snapshots/$number/info.xml")
+	echo "commit $uuid $parent_uuid"
+	echo -n "    $number"
+	[ -n "$desc" ] && echo -n " '$desc'"
+	[ "$uuid" = "$current" ] && echo -n " [current]"
+	[ "$number" = "$default" ] && echo -n " [default]"
+	echo
+done < <(btrfs subvol list / -u -q | tac) | ./test-graph "$@"
